@@ -61,7 +61,7 @@ db.serialize(() => {
   )`);
 
   // Seed default Admin
-  const adminEmail = 'admin@nirmalfireworks.com';
+  const adminEmail = 'admin@nirmalfireworks.org';
   db.get(`SELECT * FROM users WHERE email = ?`, [adminEmail], async (err, row) => {
     if (!row) {
       const hashedPass = await bcrypt.hash('Nirmal@2026', 10);

@@ -4,7 +4,9 @@
   "description": "Backend for Nirmal Firework Shop",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+  "start": "node server.js",
+  "build:frontend": "cd frontend && npm install && npm run build",
+  "heroku-postbuild": "npm run build:frontend"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
