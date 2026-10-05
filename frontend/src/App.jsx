@@ -5,7 +5,7 @@ import {
   AlertTriangle, CheckCircle, Printer, X, Shield, User, DollarSign
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://nirmal-fireshop.onrender.com/api';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('nirmal_token') || '');
