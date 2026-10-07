@@ -288,6 +288,32 @@ app.delete('/api/bills/:id', authenticateToken, (req, res) => {
   });
 });
 
+// TEMPORARY: Remove duplicate admin account
+app.delete('/api/admin/remove-duplicate', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  db.run(
+    `DELETE FROM users WHERE email = ? AND role = 'admin'`,
+    ['admin@nirmalfireworks.com'],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Duplicate admin not found' });
+      }
+
+      res.json({
+        success: true,
+        message: 'Duplicate admin removed successfully'
+      });
+    }
+  );
+});
+
 // --- ANALYTICS & REPORTS (Admin Only) ---
 app.get('/api/analytics', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
