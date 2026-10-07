@@ -125,8 +125,8 @@ function TabButton({ active, onClick, icon, label }) {
 
 // --- LOGIN SCREEN ---
 function LoginScreen({ onLogin, theme, setTheme }) {
-  const [email, setEmail] = useState('admin@nirmalfireworks.com');
-  const [password, setPassword] = useState('Nirmal@2026');
+  const [email, setEmail] = useState();
+  const [password, setPassword] = useState();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -206,7 +206,7 @@ function LoginScreen({ onLogin, theme, setTheme }) {
           </button>
         </form>
         <div className="mt-6 text-center text-xs text-slate-500">
-          Default Admin: admin@nirmalfireworks.com / Nirmal@2026
+          Default Admin: admin@nirmalfireworks.com
         </div>
       </div>
     </div>
