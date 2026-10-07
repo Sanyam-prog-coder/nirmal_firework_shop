@@ -43,9 +43,18 @@ The application is designed to help shop owners track **which employee sold a pr
 nirmal_firework_shop/
 │
 ├── frontend/
-│   └── Angular application
+│   └── node modules
+│   └── React vite application
+│   └── src/
+│      └── App.jsx
+│      └── index.css
+│      └── main.jsx
+│   └── index.html
+│   └── package.json
+│   └── package-lock.json
 │
 ├── backend/
+│   └── node modules
 │   ├── main.py
 │   ├── models.py
 │   ├── database.py
