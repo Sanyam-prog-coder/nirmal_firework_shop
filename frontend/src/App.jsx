@@ -125,8 +125,8 @@ function TabButton({ active, onClick, icon, label }) {
 
 // --- LOGIN SCREEN ---
 function LoginScreen({ onLogin, theme, setTheme }) {
-  const [email, setEmail] = useState();
-  const [password, setPassword] = useState();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -274,6 +274,11 @@ function POSView({ token, user }) {
     }
   };
 
+  // Function to handle bargaining price changes per cart item
+  const updateItemPrice = (id, newPrice) => {
+    setCart(cart.map(item => item.id === id ? { ...item, selling_price: parseFloat(newPrice) || 0 } : item));
+  };
+
   const subtotal = cart.reduce((sum, item) => sum + (item.selling_price * item.quantity), 0);
   const finalTotal = Math.max(0, subtotal - (parseFloat(discount) || 0));
 
@@ -399,21 +404,41 @@ function POSView({ token, user }) {
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl flex items-center justify-between">
-                <div className="flex-1 pr-2">
+              <div key={item.id} className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-sm line-clamp-1">{item.name}</h4>
-                  <p className="text-xs text-slate-500">₹{item.selling_price} each</p>
+                  <button 
+                    onClick={() => updateQuantity(item.id, 0)}
+                    className="text-slate-400 hover:text-red-500 text-xs font-medium"
+                  >
+                    Remove
+                  </button>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button 
-                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    className="w-7 h-7 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center font-bold text-sm"
-                  >-</button>
-                  <span className="text-sm font-semibold w-5 text-center">{item.quantity}</span>
-                  <button 
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    className="w-7 h-7 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center font-bold text-sm"
-                  >+</button>
+                
+                {/* Bargain / Editable Selling Price per item */}
+                <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                  <span>Selling Price (₹):</span>
+                  <input 
+                    type="number"
+                    value={item.selling_price}
+                    onChange={(e) => updateItemPrice(item.id, e.target.value)}
+                    className="w-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-0.5 text-right font-medium text-orange-600 dark:text-orange-400 focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-slate-500">Qty: {item.quantity}</span>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      className="w-6 h-6 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center font-bold text-xs"
+                    >-</button>
+                    <span className="text-xs font-semibold w-4 text-center">{item.quantity}</span>
+                    <button 
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      className="w-6 h-6 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center font-bold text-xs"
+                    >+</button>
+                  </div>
                 </div>
               </div>
             ))
@@ -425,8 +450,9 @@ function POSView({ token, user }) {
             <span>Subtotal</span>
             <span>₹{subtotal.toFixed(2)}</span>
           </div>
+
           <div className="flex items-center justify-between text-sm text-slate-500">
-            <span>Discount (₹)</span>
+            <span>Extra Discount (₹)</span>
             <input 
               type="number" 
               value={discount}
@@ -434,6 +460,7 @@ function POSView({ token, user }) {
               className="w-24 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-right text-sm focus:outline-none focus:border-orange-500"
             />
           </div>
+
           <div className="flex justify-between text-lg font-bold text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
             <span>Final Amount</span>
             <span className="text-orange-600 dark:text-orange-400">₹{finalTotal.toFixed(2)}</span>
@@ -878,7 +905,6 @@ function FinancialsView({ token }) {
     }
   };
 
-  // Function to delete a bill
   const handleDeleteBill = async (billId) => {
     if (!window.confirm("Are you sure you want to delete this bill?")) return;
 
@@ -889,7 +915,6 @@ function FinancialsView({ token }) {
       });
 
       if (res.ok) {
-        // Remove the deleted bill from local state to update the UI instantly
         setBills(bills.filter(b => b.id !== billId));
       } else {
         alert("Failed to delete the bill.");
@@ -1027,10 +1052,8 @@ function AnalyticsView({ token }) {
 }
 
 // --- WORKER MANAGEMENT VIEW (Admin Only) ---
-
 function WorkersView({ token }) {
   const [workers, setWorkers] = useState([]);
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -1039,15 +1062,11 @@ function WorkersView({ token }) {
     fetchWorkers();
   }, []);
 
-  // Get all users
   const fetchWorkers = async () => {
     try {
       const res = await fetch(`${API_BASE}/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-
       if (res.ok) {
         setWorkers(await res.json());
       } else {
@@ -1060,10 +1079,8 @@ function WorkersView({ token }) {
     }
   };
 
-  // Create worker
   const handleCreateWorker = async (e) => {
     e.preventDefault();
-
     try {
       const res = await fetch(`${API_BASE}/users`, {
         method: 'POST',
@@ -1071,20 +1088,14 @@ function WorkersView({ token }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          name,
-          email,
-          password
-        })
+        body: JSON.stringify({ name, email, password })
       });
 
       if (res.ok) {
         setName('');
         setEmail('');
         setPassword('');
-
         await fetchWorkers();
-
         alert('Worker account created successfully!');
       } else {
         const err = await res.json();
@@ -1096,22 +1107,14 @@ function WorkersView({ token }) {
     }
   };
 
-  // Remove worker
   const handleRemoveWorker = async (workerId, workerName) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to remove worker "${workerName}"?`
-    );
-
-    if (!confirmed) {
-      return;
-    }
+    const confirmed = window.confirm(`Are you sure you want to remove worker "${workerName}"?`);
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`${API_BASE}/users/${workerId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (res.ok) {
@@ -1129,21 +1132,11 @@ function WorkersView({ token }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-      {/* CREATE WORKER */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm h-fit">
-
-        <h3 className="font-bold text-base mb-4">
-          Create New Staff Account
-        </h3>
-
+        <h3 className="font-bold text-base mb-4">Create New Staff Account</h3>
         <form onSubmit={handleCreateWorker} className="space-y-4">
-
           <div>
-            <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">
-              Full Name
-            </label>
-
+            <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Full Name</label>
             <input
               type="text"
               required
@@ -1152,12 +1145,8 @@ function WorkersView({ token }) {
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
             />
           </div>
-
           <div>
-            <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">
-              Email Address
-            </label>
-
+            <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address</label>
             <input
               type="email"
               required
@@ -1166,12 +1155,8 @@ function WorkersView({ token }) {
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
             />
           </div>
-
           <div>
-            <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">
-              Password
-            </label>
-
+            <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Password</label>
             <input
               type="password"
               required
@@ -1180,126 +1165,70 @@ function WorkersView({ token }) {
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
             />
           </div>
-
-          {/* Role is intentionally removed.
-              Backend will always create a worker. */}
-
           <button
             type="submit"
             className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-2.5 rounded-xl transition shadow-lg shadow-orange-600/30"
           >
             Create Worker
           </button>
-
         </form>
       </div>
 
-
-      {/* WORKER LIST */}
       <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-
         <div className="flex items-center justify-between mb-4">
-
-          <h3 className="font-bold text-base">
-            Authorized Staff & Workers
-          </h3>
-
+          <h3 className="font-bold text-base">Authorized Staff & Workers</h3>
           <button
             onClick={fetchWorkers}
             className="text-sm px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
           >
             Refresh
           </button>
-
         </div>
 
         <div className="overflow-x-auto">
-
           <table className="w-full text-left border-collapse">
-
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 uppercase">
-
                 <th className="pb-3">Name</th>
-
                 <th className="pb-3">Email</th>
-
                 <th className="pb-3">Role</th>
-
                 <th className="pb-3 text-right">Action</th>
-
               </tr>
             </thead>
-
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-
               {workers.map(w => (
-
                 <tr key={w.id}>
-
-                  <td className="py-3 font-semibold">
-                    {w.name}
-                  </td>
-
-                  <td className="py-3 text-slate-500">
-                    {w.email}
-                  </td>
-
+                  <td className="py-3 font-semibold">{w.name}</td>
+                  <td className="py-3 text-slate-500">{w.email}</td>
                   <td className="py-3">
-
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
-                        w.role === 'admin'
-                          ? 'bg-orange-500/10 text-orange-600'
-                          : 'bg-blue-500/10 text-blue-500'
-                      }`}
-                    >
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
+                      w.role === 'admin' ? 'bg-orange-500/10 text-orange-600' : 'bg-blue-500/10 text-blue-500'
+                    }`}>
                       {w.role}
                     </span>
-
                   </td>
-
                   <td className="py-3 text-right">
-
                     {w.role === 'worker' ? (
-
                       <button
-                        onClick={() =>
-                          handleRemoveWorker(w.id, w.name)
-                        }
+                        onClick={() => handleRemoveWorker(w.id, w.name)}
                         className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-lg transition"
                       >
                         Remove
                       </button>
-
                     ) : (
-
-                      <span className="text-xs text-slate-400">
-                        Protected
-                      </span>
-
+                      <span className="text-xs text-slate-400">Protected</span>
                     )}
-
                   </td>
-
                 </tr>
-
               ))}
-
             </tbody>
-
           </table>
-
         </div>
 
         {workers.length === 0 && (
-          <div className="text-center py-8 text-slate-500">
-            No users found.
-          </div>
+          <div className="text-center py-8 text-slate-500">No users found.</div>
         )}
-
       </div>
-
     </div>
   );
 }
