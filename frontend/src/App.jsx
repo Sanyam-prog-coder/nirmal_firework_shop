@@ -274,7 +274,6 @@ function POSView({ token, user }) {
     }
   };
 
-  // Function to handle bargaining price changes per cart item
   const updateItemPrice = (id, newPrice) => {
     setCart(cart.map(item => item.id === id ? { ...item, selling_price: parseFloat(newPrice) || 0 } : item));
   };
@@ -313,6 +312,39 @@ function POSView({ token, user }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!completedBill) return;
+
+    let phone = completedBill.customer_phone ? completedBill.customer_phone.replace(/\D/g, '') : '';
+    if (phone.length === 10) {
+      phone = '91' + phone; // Defaulting to India (+91)
+    }
+
+    let message = `🎆 *NIRMAL FIREWORK SHOP* 🎆\n`;
+    message += `Bill ID: ${completedBill.billId}\n`;
+    message += `Date: ${new Date(completedBill.date).toLocaleString()}\n`;
+    message += `Customer: ${completedBill.customer_name || 'Walk-in'}\n\n`;
+    message += `*Items:*\n`;
+    
+    completedBill.items.forEach((item, idx) => {
+      message += `${idx + 1}. ${item.name} x ${item.quantity} = ₹${item.selling_price * item.quantity}\n`;
+    });
+
+    message += `\nSubtotal: ₹${completedBill.subtotal}\n`;
+    if (completedBill.discount > 0) {
+      message += `Discount: -₹${completedBill.discount}\n`;
+    }
+    message += `*Total Amount: ₹${completedBill.total}*\n\n`;
+    message += `Thank you for shopping with us! Have a safe celebration! 🎇`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = phone 
+      ? `https://wa.me/${phone}?text=${encodedMessage}` 
+      : `https://wa.me/?text=${encodedMessage}`;
+
+    window.open(whatsappUrl, '_blank');
   };
 
   return (
@@ -415,7 +447,6 @@ function POSView({ token, user }) {
                   </button>
                 </div>
                 
-                {/* Bargain / Editable Selling Price per item */}
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
                   <span>Selling Price (₹):</span>
                   <input 
@@ -543,17 +574,25 @@ function POSView({ token, user }) {
               </div>
             </div>
 
-            <div className="flex space-x-3 mt-6">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-6">
               <button 
                 onClick={() => window.print()}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-medium py-2.5 rounded-xl flex items-center justify-center space-x-2 transition"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-medium py-2.5 rounded-xl flex items-center justify-center space-x-2 transition text-sm"
               >
                 <Printer className="w-4 h-4"/>
-                <span>Print Receipt</span>
+                <span>Print</span>
               </button>
+              
+              <button 
+                onClick={handleSendWhatsApp}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl flex items-center justify-center space-x-2 transition text-sm"
+              >
+                <span>💬 WhatsApp</span>
+              </button>
+
               <button 
                 onClick={() => setCompletedBill(null)}
-                className="px-4 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 font-medium rounded-xl transition"
+                className="px-4 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 font-medium rounded-xl transition text-sm"
               >
                 Close
               </button>
@@ -708,7 +747,6 @@ function InventoryView({ token, user }) {
         ))}
       </div>
 
-      {/* Add/Edit Modal (Admin Only) */}
       {modalOpen && user.role === 'admin' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
